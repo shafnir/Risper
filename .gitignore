@@ -1,0 +1,30 @@
+.DS_Store
+
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Local app staging
+dist/
+
+# Local ASR/model artifacts
+Models/
+models/
+whisper.cpp/
+third_party/whisper.cpp/
+*.ggml
+*.bin
+
+# Local audio and diagnostics
+recordings/
+logs/
+*.wav
+*.m4a
+*.caf
+*.log
+
+# Xcode/user-local state
+DerivedData/
+*.xcuserdata/
+*.xcuserstate
