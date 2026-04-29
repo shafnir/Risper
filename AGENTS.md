@@ -1,0 +1,71 @@
+# AGENTS.md
+
+## Repository Context
+
+- Risper is a local-first Hebrew dictation utility for macOS.
+- Runtime audio processing must stay local for the MVP. Do not introduce cloud ASR, telemetry, or transcript upload paths unless the user explicitly changes the product direction.
+- Treat `specs.md` as the product and architecture source of truth, and `tasks.md` as the implementation queue.
+- The app is a SwiftPM-first AppKit macOS app. Use Swift, AppKit, AVFoundation, Carbon/CoreGraphics, and local `whisper.cpp` integration before adding new frameworks.
+
+## Agent Workflow
+
+- Before implementation, read the relevant parts of `specs.md`, `tasks.md`, `Package.swift`, scripts, and source files touched by the task.
+- For macOS app development, always use the `Build macOS Apps` plugin and its relevant task-specific skills before planning or editing code.
+- Prefer the next pending task in `tasks.md` unless the user directs otherwise.
+- Keep changes small, coherent, and reversible. Separate broad structural refactors from feature or bug-fix changes unless the refactor is required to complete the task safely.
+- Mark a task done in `tasks.md` only after the implementation is complete and the relevant verification has passed or the remaining manual gap is clearly documented.
+- Do not overwrite or revert unrelated user changes. If the worktree is dirty, work with the existing changes.
+
+## Build And Verification
+
+- Run `swift build` after Swift source changes.
+- Run `script/build_and_run.sh --verify` when app-bundle behavior, launch behavior, permissions, menus, hotkeys, or lifecycle code changes.
+- Use `script/asr_harness.sh` or the local ASR server workflow for transcription-path validation when ASR behavior changes.
+- For microphone, hotkey, Accessibility, clipboard, or cross-app paste behavior, document any manual QA that could not be completed from the agent environment.
+- Do not add production dependencies, package managers, generated projects, or new build systems without explicit user approval.
+
+## Engineering Standards
+
+- Optimize first for clarity, then simplicity, then concision. Code should be easy for the next engineer or agent to read, test, and change.
+- Keep responsibilities cohesive. Avoid god objects, god files, and utility dumping grounds. When behavior naturally splits into separate domains, extract along stable domain boundaries rather than by incidental implementation detail.
+- Maintain a single source of truth for configuration, paths, hotkeys, permission state, model/server settings, transcript state, and temp-file policy. If data is cached, derived, or duplicated for performance, make the owner and lifetime explicit.
+- Avoid speculative generality. Build the behavior required by `specs.md` and `tasks.md`; defer abstractions until they remove real duplication or clarify a real boundary.
+- Prefer proven platform APIs and existing project scripts over bespoke DIY implementations. If custom machinery is necessary, keep it narrow and explain the reason in code or docs.
+- Reduce toil deliberately. Repeated setup, verification, diagnostics, and recovery steps should become reliable scripts or app diagnostics when they have clear ongoing value.
+- Keep documentation short, current, and linked to canonical sources. Update docs in the same change as behavior changes when the docs would otherwise become stale.
+
+## Swift And macOS Conventions
+
+- Use AppKit for menu bar app lifecycle, status items, global hotkeys, pasteboard insertion, permission surfaces, and process management.
+- Use AVFoundation for recording and audio conversion.
+- Use SwiftUI only when a real settings or richer UI surface is introduced.
+- Prefer early exits with `guard` for invalid states and permission failures.
+- Keep access levels tight. Default to `private` or file-local scope for implementation details.
+- Avoid force unwraps and force casts unless the invariant is local, obvious, and failure would indicate a programmer error.
+- Use macOS unified logging for diagnostics, but keep logs privacy-safe.
+
+## Privacy And Safety
+
+- Do not log transcript text or audio contents by default.
+- Do not persist audio longer than the current task/spec requires. Temp audio belongs under `~/Library/Caches/Risper/recordings/` unless the spec changes.
+- Preserve user clipboard contents around insertion flows.
+- Permission-denied, missing-model, ASR-down, empty-audio, and paste-failure paths must fail without crashing and without losing user data.
+- Treat Accessibility and microphone permission behavior as user-visible product behavior, not just plumbing.
+
+## Review Lens
+
+- Review design, functionality, complexity, tests, naming, comments, style, and documentation before finishing.
+- Watch for code smells as signals to investigate, especially duplicated code, large types/files, hidden global state, mutable shared state, and shotgun-surgery changes.
+- Prefer small changes with related tests. If a change is hard to test automatically, state the manual verification path.
+
+## Reference Basis
+
+- OpenAI Codex AGENTS.md guidance: https://developers.openai.com/codex/guides/agents-md
+- Google Engineering Practices: https://google.github.io/eng-practices/
+- Google Swift Style Guide: https://google.github.io/swift/
+- Google SRE toil guidance: https://sre.google/sre-book/eliminating-toil/
+- DORA technical capabilities: https://dora.dev/capabilities/trunk-based-development/
+- AWS Well-Architected operational excellence: https://docs.aws.amazon.com/wellarchitected/2023-10-03/framework/oe-design-principles.html
+- Azure Well-Architected automation guidance: https://learn.microsoft.com/en-us/azure/well-architected/operational-excellence/enable-automation
+- Martin Fowler on code smells: https://martinfowler.com/bliki/CodeSmell.html
+- StaffEng archetypes: https://staffeng.com/guides/staff-archetypes/
