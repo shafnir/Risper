@@ -18,6 +18,7 @@ final class StatusMenuController: NSObject {
     private let functionKeyItem = NSMenuItem()
     private let fallbackItem = NSMenuItem()
     private let recordingItem = NSMenuItem()
+    private let dictationItem = NSMenuItem()
     private let lastRecordingItem = NSMenuItem()
     private let activeTriggerItem = NSMenuItem()
     private let lastTriggerItem = NSMenuItem()
@@ -36,6 +37,7 @@ final class StatusMenuController: NSObject {
         functionKeyStatus: String,
         fallbackStatus: String,
         recordingStatus: String,
+        dictationStatus: String,
         lastRecording: String,
         activeTrigger: String,
         lastTrigger: String
@@ -44,11 +46,12 @@ final class StatusMenuController: NSObject {
         appStateItem.title = "App: Running"
         modelItem.title = "Model: \(modelStatus)"
         asrServerItem.title = "ASR Server: \(asrServerStatus)"
-        accessibilityItem.title = "Accessibility: \(accessibilityTrusted ? "Granted" : "Not needed yet")"
+        accessibilityItem.title = "Accessibility: \(accessibilityTrusted ? "Granted" : "Required for paste")"
         microphoneItem.title = "Microphone: \(microphoneStatus)"
         functionKeyItem.title = "fn Trigger: \(functionKeyStatus)"
         fallbackItem.title = "Shortcut: \(fallbackStatus)"
         recordingItem.title = "Recording: \(recordingStatus)"
+        dictationItem.title = "Dictation: \(dictationStatus)"
         lastRecordingItem.title = "Last Recording: \(lastRecording)"
         activeTriggerItem.title = "Trigger: \(activeTrigger)"
         lastTriggerItem.title = "Last Trigger: \(lastTrigger)"
@@ -65,6 +68,7 @@ final class StatusMenuController: NSObject {
         menu.addItem(functionKeyItem)
         menu.addItem(fallbackItem)
         menu.addItem(recordingItem)
+        menu.addItem(dictationItem)
         menu.addItem(lastRecordingItem)
         menu.addItem(activeTriggerItem)
         menu.addItem(lastTriggerItem)

@@ -31,6 +31,7 @@
 - Maintain a single source of truth for configuration, paths, hotkeys, permission state, model/server settings, transcript state, and temp-file policy. If data is cached, derived, or duplicated for performance, make the owner and lifetime explicit.
 - Avoid speculative generality. Build the behavior required by `specs.md` and `tasks.md`; defer abstractions until they remove real duplication or clarify a real boundary.
 - Prefer proven platform APIs and existing project scripts over bespoke DIY implementations. If custom machinery is necessary, keep it narrow and explain the reason in code or docs.
+- Keep code secure by default: prefer least-privilege permissions, narrow local-only exceptions, validated inputs, safe process/network boundaries, and privacy-preserving failure behavior.
 - Reduce toil deliberately. Repeated setup, verification, diagnostics, and recovery steps should become reliable scripts or app diagnostics when they have clear ongoing value.
 - Keep documentation short, current, and linked to canonical sources. Update docs in the same change as behavior changes when the docs would otherwise become stale.
 

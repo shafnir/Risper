@@ -7,9 +7,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
     private lazy var statusController = StatusMenuController(delegate: self)
     private lazy var fallbackHotKeyMonitor = FallbackHotKeyMonitor(delegate: self)
     private let audioRecorder = AudioRecorder()
+    private let asrClient = ASRClient()
+    private let textInjector = TextInjector()
 
     private var activeTrigger: TriggerSource?
     private var lastTriggerDescription = "None"
+    private var dictationStatus = "Idle"
+    private var isDictationBusy = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -21,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
             functionKeyStatus: FunctionKeyLongPressMonitor.simpleModeStatus,
             fallbackStatus: "Starting",
             recordingStatus: audioRecorder.statusDescription,
+            dictationStatus: dictationStatus,
             lastRecording: audioRecorder.lastRecordingDescription,
             activeTrigger: activeTriggerDescription,
             lastTrigger: lastTriggerDescription
@@ -38,6 +43,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
 
     func triggerDidBegin(source: TriggerSource) {
         guard activeTrigger == nil else { return }
+        guard !isDictationBusy else {
+            lastTriggerDescription = "\(source.rawValue) ignored; dictation in progress"
+            refreshStatusMenu()
+            return
+        }
+
         activeTrigger = source
         lastTriggerDescription = "\(source.rawValue) began"
         RisperLog.app.info("Trigger began: \(source.rawValue, privacy: .public)")
@@ -45,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
         do {
             try audioRecorder.startRecording()
         } catch {
+            activeTrigger = nil
             lastTriggerDescription = "\(source.rawValue) began; recording unavailable"
             RisperLog.app.error("Recording did not start: \(error.localizedDescription, privacy: .public)")
         }
@@ -57,13 +69,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
         activeTrigger = nil
 
         if let recording = audioRecorder.stopRecording() {
-            lastTriggerDescription = "\(source.rawValue) ended; saved \(recording.url.lastPathComponent)"
+            transcribeAndPaste(recording: recording, source: source)
         } else {
             lastTriggerDescription = "\(source.rawValue) ended"
+            refreshStatusMenu()
         }
 
         RisperLog.app.info("Trigger ended: \(source.rawValue, privacy: .public)")
-        refreshStatusMenu()
     }
 
     func triggerMonitorStatusDidChange() {
@@ -79,6 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
             functionKeyStatus: FunctionKeyLongPressMonitor.simpleModeStatus,
             fallbackStatus: fallbackHotKeyMonitor.statusDescription,
             recordingStatus: audioRecorder.statusDescription,
+            dictationStatus: dictationStatus,
             lastRecording: audioRecorder.lastRecordingDescription,
             activeTrigger: activeTriggerDescription,
             lastTrigger: lastTriggerDescription
@@ -102,5 +115,70 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
 
     private var activeTriggerDescription: String {
         activeTrigger?.rawValue ?? "Idle"
+    }
+
+    private func transcribeAndPaste(recording: RecordingResult, source: TriggerSource) {
+        isDictationBusy = true
+        dictationStatus = "Transcribing"
+        lastTriggerDescription = "\(source.rawValue) ended; transcribing \(recording.url.lastPathComponent)"
+        refreshStatusMenu()
+
+        asrClient.transcribe(recording: recording) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.handleTranscriptionResult(result, source: source)
+            }
+        }
+    }
+
+    private func handleTranscriptionResult(_ result: Result<String, Error>, source: TriggerSource) {
+        switch result {
+        case .success(let transcript):
+            paste(transcript, source: source)
+        case .failure(let error):
+            dictationStatus = dictationFailureStatus(for: error)
+            lastTriggerDescription = "\(source.rawValue) ended; transcription failed"
+            RisperLog.app.error("Transcription failed: \(error.localizedDescription, privacy: .public)")
+        }
+
+        isDictationBusy = false
+        refreshStatusMenu()
+    }
+
+    private func paste(_ transcript: String, source: TriggerSource) {
+        dictationStatus = "Pasting"
+        refreshStatusMenu()
+
+        do {
+            try textInjector.paste(transcript)
+            dictationStatus = "Inserted"
+            lastTriggerDescription = "\(source.rawValue) ended; inserted transcript"
+            RisperLog.app.info("Transcript inserted")
+        } catch {
+            if case TextInjectorError.accessibilityRequired = error {
+                dictationStatus = "Accessibility required"
+            } else {
+                dictationStatus = "Paste failed"
+            }
+
+            lastTriggerDescription = "\(source.rawValue) ended; paste failed"
+            RisperLog.app.error("Paste failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private func dictationFailureStatus(for error: Error) -> String {
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .cannotConnectToHost, .cannotFindHost, .networkConnectionLost, .timedOut:
+                return "ASR unavailable"
+            default:
+                return "ASR failed"
+            }
+        }
+
+        if case ASRClientError.emptyTranscript = error {
+            return "Empty transcript"
+        }
+
+        return "ASR failed"
     }
 }

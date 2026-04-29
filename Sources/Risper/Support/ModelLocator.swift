@@ -10,6 +10,6 @@ enum ModelLocator {
 
 enum ASRServerStatus {
     static var description: String {
-        "Not configured"
+        "Assumed at \(RisperConfiguration.asrHost):\(RisperConfiguration.asrPort)"
     }
 }

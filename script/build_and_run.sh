@@ -45,6 +45,11 @@ cat >"$INFO_PLIST" <<PLIST
   <true/>
   <key>NSInputMonitoringUsageDescription</key>
   <string>Risper observes the fn key and fallback shortcut to start and stop local dictation.</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsLocalNetworking</key>
+    <true/>
+  </dict>
   <key>NSMicrophoneUsageDescription</key>
   <string>Risper records speech locally for Hebrew dictation.</string>
   <key>NSPrincipalClass</key>
