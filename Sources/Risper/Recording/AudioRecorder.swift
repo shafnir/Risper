@@ -5,6 +5,8 @@ import Foundation
 struct RecordingResult {
     let url: URL
     let duration: TimeInterval
+    let peakLevel: Float
+    let averageLevel: Float
 }
 
 enum AudioRecorderError: LocalizedError {
@@ -57,6 +59,11 @@ final class AudioRecorder {
     private var state: State = .idle
     private var writeError: Error?
     private var lastRecording: RecordingResult?
+    private var peakLevel: Float = 0
+    private var levelTotal: Float = 0
+    private var levelSampleCount = 0
+
+    var onLevelChange: ((Float) -> Void)?
 
     var statusDescription: String {
         switch state {
@@ -126,14 +133,20 @@ final class AudioRecorder {
             )
 
             writeError = nil
+            peakLevel = 0
+            levelTotal = 0
+            levelSampleCount = 0
             let startedAt = Date()
 
             inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self, converter, outputFile, targetFormat] buffer, _ in
                 guard let self else { return }
+                let level = Self.normalizedAudioLevel(from: buffer)
+                self.publishAudioLevel(level)
                 self.writeGroup.enter()
 
                 guard let bufferCopy = buffer.copyForAsyncWrite() else {
                     self.writeQueue.async {
+                        self.recordLevel(level)
                         if self.writeError == nil {
                             self.writeError = AudioRecorderError.bufferCopyFailed
                         }
@@ -144,6 +157,7 @@ final class AudioRecorder {
 
                 self.writeQueue.async {
                     defer { self.writeGroup.leave() }
+                    self.recordLevel(level)
 
                     do {
                         try self.write(bufferCopy, converter: converter, targetFormat: targetFormat, to: outputFile)
@@ -175,6 +189,7 @@ final class AudioRecorder {
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         writeGroup.wait()
+        onLevelChange?(0)
 
         if let writeError {
             state = .failed(writeError.localizedDescription)
@@ -182,11 +197,36 @@ final class AudioRecorder {
             return nil
         }
 
-        let result = RecordingResult(url: url, duration: max(0, Date().timeIntervalSince(startedAt)))
+        let result = RecordingResult(
+            url: url,
+            duration: max(0, Date().timeIntervalSince(startedAt)),
+            peakLevel: peakLevel,
+            averageLevel: averageLevel
+        )
         lastRecording = result
         state = .idle
         RisperLog.app.info("Recording saved: \(url.lastPathComponent, privacy: .public)")
         return result
+    }
+
+    private var averageLevel: Float {
+        guard levelSampleCount > 0 else {
+            return 0
+        }
+
+        return levelTotal / Float(levelSampleCount)
+    }
+
+    private func publishAudioLevel(_ level: Float) {
+        DispatchQueue.main.async { [weak self] in
+            self?.onLevelChange?(level)
+        }
+    }
+
+    private func recordLevel(_ level: Float) {
+        peakLevel = max(peakLevel, level)
+        levelTotal += level
+        levelSampleCount += 1
     }
 
     private func write(
@@ -247,6 +287,37 @@ final class AudioRecorder {
         let frameRatio = targetFormat.sampleRate / sourceSampleRate
         let convertedFrames = Int(ceil(Double(buffer.frameLength) * frameRatio)) + 512
         return AVAudioFrameCount(max(1, convertedFrames))
+    }
+
+    private static func normalizedAudioLevel(from buffer: AVAudioPCMBuffer) -> Float {
+        guard let channelData = buffer.floatChannelData, buffer.frameLength > 0 else {
+            return 0
+        }
+
+        let channelCount = Int(buffer.format.channelCount)
+        let frameLength = Int(buffer.frameLength)
+        var squaredTotal: Float = 0
+        var sampleCount = 0
+
+        for channel in 0..<channelCount {
+            let samples = channelData[channel]
+
+            for frame in 0..<frameLength {
+                let sample = samples[frame]
+                squaredTotal += sample * sample
+            }
+
+            sampleCount += frameLength
+        }
+
+        guard sampleCount > 0 else {
+            return 0
+        }
+
+        let rms = sqrt(squaredTotal / Float(sampleCount))
+        let floorDecibels: Float = -55
+        let decibels = max(floorDecibels, 20 * log10(max(rms, 0.000_001)))
+        return min(max((decibels - floorDecibels) / abs(floorDecibels), 0), 1)
     }
 
     private static func formatDuration(_ duration: TimeInterval) -> String {

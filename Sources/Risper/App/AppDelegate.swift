@@ -21,12 +21,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
     private var isDictationBusy = false
     private var lastTranscript: String?
     private var pendingTranscriptionRecordings: [URL: RecordingResult] = [:]
+    private let minimumTranscriptionDuration: TimeInterval = 0.85
+    private let minimumSpeechPeakLevel: Float = 0.20
+    private let minimumSpeechAverageLevel: Float = 0.08
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
         asrServerManager.onStatusChange = { [weak self] in
             self?.refreshStatusMenu()
+        }
+        audioRecorder.onLevelChange = { [weak self] level in
+            self?.recordingOverlay.updateAudioLevel(level)
         }
 
         refreshStatusMenu()
@@ -100,6 +106,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
 
         if let recording = audioRecorder.stopRecording() {
             RisperLog.app.info("Recording stopped after \(recording.duration, privacy: .public) seconds")
+            guard shouldTranscribe(recording) else {
+                ignoreRecording(recording, source: source)
+                return
+            }
+
             transcribeAndPaste(recording: recording, source: source)
         } else {
             lastTriggerDescription = "\(source.rawValue) ended"
@@ -183,6 +194,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
 
     private var activeTriggerDescription: String {
         activeTrigger?.rawValue ?? "Idle"
+    }
+
+    private func shouldTranscribe(_ recording: RecordingResult) -> Bool {
+        guard recording.duration >= minimumTranscriptionDuration else {
+            return false
+        }
+
+        return recording.peakLevel >= minimumSpeechPeakLevel ||
+            recording.averageLevel >= minimumSpeechAverageLevel
+    }
+
+    private func ignoreRecording(_ recording: RecordingResult, source: TriggerSource) {
+        if recording.duration < minimumTranscriptionDuration {
+            dictationStatus = "Recording too short"
+            lastTriggerDescription = "\(source.rawValue) ended; ignored short recording"
+        } else {
+            dictationStatus = "No speech detected"
+            lastTriggerDescription = "\(source.rawValue) ended; ignored quiet recording"
+        }
+
+        RisperLog.app.info(
+            "Recording ignored before ASR: duration \(recording.duration, privacy: .public), peak \(recording.peakLevel, privacy: .public), average \(recording.averageLevel, privacy: .public)"
+        )
+        deleteRecording(recording)
+        refreshStatusMenu()
     }
 
     private func transcribeAndPaste(recording: RecordingResult, source: TriggerSource) {
