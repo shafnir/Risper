@@ -13,6 +13,7 @@
 - For macOS app development, always use the `Build macOS Apps` plugin and its relevant task-specific skills before planning or editing code.
 - Prefer the next pending task in `tasks.md` unless the user directs otherwise.
 - Keep changes small, coherent, and reversible. Separate broad structural refactors from feature or bug-fix changes unless the refactor is required to complete the task safely.
+- When the user asks to fix several code-review findings, launch sub-agents to handle independent fixes in parallel where the work can be cleanly separated. Keep tightly coupled or blocking fixes local, and integrate and verify all results before finishing.
 - Mark a task done in `tasks.md` only after the implementation is complete and the relevant verification has passed or the remaining manual gap is clearly documented.
 - Do not overwrite or revert unrelated user changes. If the worktree is dirty, work with the existing changes.
 
@@ -31,6 +32,7 @@
 - Maintain a single source of truth for configuration, paths, hotkeys, permission state, model/server settings, transcript state, and temp-file policy. If data is cached, derived, or duplicated for performance, make the owner and lifetime explicit.
 - Avoid speculative generality. Build the behavior required by `specs.md` and `tasks.md`; defer abstractions until they remove real duplication or clarify a real boundary.
 - Prefer proven platform APIs and existing project scripts over bespoke DIY implementations. If custom machinery is necessary, keep it narrow and explain the reason in code or docs.
+- When implementing or fixing behavior, identify the underlying invariant, lifecycle, or failure mode before editing. Solve the class of problem across the relevant local surface, not only the visible symptom. For resources, permissions, temporary state, user data, process/global state, and async flows, define acquisition, mutation, cleanup, cancellation, failure, and interruption behavior explicitly where relevant.
 - Keep code secure by default: prefer least-privilege permissions, narrow local-only exceptions, validated inputs, safe process/network boundaries, and privacy-preserving failure behavior.
 - Reduce toil deliberately. Repeated setup, verification, diagnostics, and recovery steps should become reliable scripts or app diagnostics when they have clear ongoing value.
 - Keep documentation short, current, and linked to canonical sources. Update docs in the same change as behavior changes when the docs would otherwise become stale.
@@ -57,6 +59,7 @@
 
 - Review design, functionality, complexity, tests, naming, comments, style, and documentation before finishing.
 - Watch for code smells as signals to investigate, especially duplicated code, large types/files, hidden global state, mutable shared state, and shotgun-surgery changes.
+- When addressing review findings, fix the underlying class of issue, not only the exact reported line. Re-scan adjacent paths for the same invariant, lifecycle, or failure-mode pattern before declaring the finding resolved.
 - Prefer small changes with related tests. If a change is hard to test automatically, state the manual verification path.
 
 ## Reference Basis

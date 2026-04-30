@@ -30,7 +30,7 @@ final class StatusMenuController: NSObject {
     }
 
     func refresh(
-        accessibilityTrusted: Bool,
+        accessibilityStatus: String,
         microphoneStatus: String,
         modelStatus: String,
         asrServerStatus: String,
@@ -46,7 +46,7 @@ final class StatusMenuController: NSObject {
         appStateItem.title = "App: Running"
         modelItem.title = "Model: \(modelStatus)"
         asrServerItem.title = "ASR Server: \(asrServerStatus)"
-        accessibilityItem.title = "Accessibility: \(accessibilityTrusted ? "Granted" : "Required for paste")"
+        accessibilityItem.title = "Accessibility: \(accessibilityStatus)"
         microphoneItem.title = "Microphone: \(microphoneStatus)"
         functionKeyItem.title = "fn Trigger: \(functionKeyStatus)"
         fallbackItem.title = "Shortcut: \(fallbackStatus)"

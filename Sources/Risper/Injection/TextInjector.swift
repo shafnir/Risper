@@ -77,7 +77,7 @@ final class TextInjector {
     }
 
     func paste(_ text: String) throws {
-        guard AXIsProcessTrusted() else {
+        guard AccessibilityPermission.requestIfNeeded() else {
             throw TextInjectorError.accessibilityRequired
         }
 

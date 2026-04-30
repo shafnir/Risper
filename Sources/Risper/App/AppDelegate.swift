@@ -18,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         statusController.refresh(
-            accessibilityTrusted: AXIsProcessTrusted(),
+            accessibilityStatus: AccessibilityPermission.statusDescription,
             microphoneStatus: MicrophonePermission.statusDescription,
             modelStatus: ModelLocator.statusDescription,
             asrServerStatus: ASRServerStatus.description,
@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
 
     func refreshStatusMenu() {
         statusController.refresh(
-            accessibilityTrusted: AXIsProcessTrusted(),
+            accessibilityStatus: AccessibilityPermission.statusDescription,
             microphoneStatus: MicrophonePermission.statusDescription,
             modelStatus: ModelLocator.statusDescription,
             asrServerStatus: ASRServerStatus.description,
@@ -107,6 +107,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
     }
 
     func openPrivacySettings() {
+        AccessibilityPermission.requestIfNeeded()
+
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else {
             return
         }
@@ -133,6 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
     private func handleTranscriptionResult(_ result: Result<String, Error>, source: TriggerSource) {
         switch result {
         case .success(let transcript):
+            RisperLog.app.info("Transcription completed: \(transcript.count, privacy: .public) characters")
             paste(transcript, source: source)
         case .failure(let error):
             dictationStatus = dictationFailureStatus(for: error)
@@ -155,7 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
             RisperLog.app.info("Transcript inserted")
         } catch {
             if case TextInjectorError.accessibilityRequired = error {
-                dictationStatus = "Accessibility required"
+                dictationStatus = "Transcribed; Accessibility required"
             } else {
                 dictationStatus = "Paste failed"
             }
