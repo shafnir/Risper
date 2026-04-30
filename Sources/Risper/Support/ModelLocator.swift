@@ -7,9 +7,3 @@ enum ModelLocator {
         FileManager.default.fileExists(atPath: modelURL.path) ? "Present" : "Missing"
     }
 }
-
-enum ASRServerStatus {
-    static var description: String {
-        "Assumed at \(RisperConfiguration.asrHost):\(RisperConfiguration.asrPort)"
-    }
-}

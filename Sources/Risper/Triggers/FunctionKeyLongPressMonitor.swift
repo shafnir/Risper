@@ -1,13 +1,13 @@
+import AppKit
 import Carbon
-import CoreGraphics
 import Foundation
 
 final class FunctionKeyLongPressMonitor {
     static let simpleModeStatus = "Off (using shortcut)"
 
     private weak var delegate: TriggerMonitorDelegate?
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
+    private var globalMonitor: Any?
+    private var localMonitor: Any?
     private var holdWorkItem: DispatchWorkItem?
     private var isFunctionKeyDown = false
     private var isTriggerActive = false
@@ -20,61 +20,67 @@ final class FunctionKeyLongPressMonitor {
     func start() {
         stop()
 
-        let eventMask = CGEventMask(1 << CGEventType.flagsChanged.rawValue)
-        guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
-            options: .listenOnly,
-            eventsOfInterest: eventMask,
-            callback: functionKeyEventTapCallback,
-            userInfo: Unmanaged.passUnretained(self).toOpaque()
-        ) else {
-            statusDescription = "Unavailable; grant Accessibility/Input Monitoring"
+        guard AccessibilityPermission.isTrusted else {
+            statusDescription = "Accessibility required"
             delegate?.triggerMonitorStatusDidChange()
-            RisperLog.app.warning("Unable to create fn-key event tap")
+            RisperLog.app.warning("fn-key monitor requires Accessibility permission")
             return
         }
 
-        eventTap = tap
-        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        if let runLoopSource {
-            CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        statusDescription = "Starting"
+        delegate?.triggerMonitorStatusDidChange()
+
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            self?.handleFunctionKeyEvent(event)
+            return event
         }
-        CGEvent.tapEnable(tap: tap, enable: true)
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            self?.handleFunctionKeyEvent(event)
+        }
+
+        guard globalMonitor != nil else {
+            stop()
+            statusDescription = "Unavailable; grant Accessibility"
+            delegate?.triggerMonitorStatusDidChange()
+            RisperLog.app.warning("Unable to start fn-key global event monitor")
+            return
+        }
+
         statusDescription = "Waiting for long-press"
         delegate?.triggerMonitorStatusDidChange()
+        RisperLog.app.info("fn-key monitor started with Accessibility event monitoring")
     }
 
     func stop() {
         holdWorkItem?.cancel()
         holdWorkItem = nil
 
-        if let eventTap {
-            CGEvent.tapEnable(tap: eventTap, enable: false)
+        if let globalMonitor {
+            NSEvent.removeMonitor(globalMonitor)
         }
-        if let runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        if let localMonitor {
+            NSEvent.removeMonitor(localMonitor)
         }
 
-        eventTap = nil
-        runLoopSource = nil
+        globalMonitor = nil
+        localMonitor = nil
         isFunctionKeyDown = false
         isTriggerActive = false
         statusDescription = "Stopped"
     }
 
-    fileprivate func handle(eventType: CGEventType, event: CGEvent) {
-        if eventType == .tapDisabledByTimeout || eventType == .tapDisabledByUserInput {
-            if let eventTap {
-                CGEvent.tapEnable(tap: eventTap, enable: true)
-            }
-            return
+    private func handleFunctionKeyEvent(_ event: NSEvent) {
+        let fnFlagIsDown = event.modifierFlags
+            .intersection(.deviceIndependentFlagsMask)
+            .contains(.function)
+        let keyCode = event.keyCode
+
+        DispatchQueue.main.async { [weak self] in
+            self?.handleFunctionKeyState(keyCode: keyCode, fnFlagIsDown: fnFlagIsDown)
         }
+    }
 
-        guard eventType == .flagsChanged else { return }
-
-        let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-        let fnFlagIsDown = event.flags.contains(.maskSecondaryFn)
+    private func handleFunctionKeyState(keyCode: UInt16, fnFlagIsDown: Bool) {
         let isFunctionEvent = keyCode == UInt16(kVK_Function) || fnFlagIsDown != isFunctionKeyDown
         guard isFunctionEvent else { return }
 
@@ -90,11 +96,13 @@ final class FunctionKeyLongPressMonitor {
         isFunctionKeyDown = true
         statusDescription = "Armed"
         delegate?.triggerMonitorStatusDidChange()
+        RisperLog.app.info("fn-key long-press armed")
 
         let workItem = DispatchWorkItem { [weak self] in
             guard let self, self.isFunctionKeyDown, !self.isTriggerActive else { return }
             self.isTriggerActive = true
             self.statusDescription = "Active"
+            RisperLog.app.info("fn-key long-press active")
             self.delegate?.triggerDidBegin(source: .functionKey)
             self.delegate?.triggerMonitorStatusDidChange()
         }
@@ -114,19 +122,10 @@ final class FunctionKeyLongPressMonitor {
         if isTriggerActive {
             isTriggerActive = false
             delegate?.triggerDidEnd(source: .functionKey)
+            RisperLog.app.info("fn-key long-press released")
         }
 
         statusDescription = "Waiting for long-press"
         delegate?.triggerMonitorStatusDidChange()
     }
-}
-
-private let functionKeyEventTapCallback: CGEventTapCallBack = { _, type, event, refcon in
-    guard let refcon else {
-        return Unmanaged.passUnretained(event)
-    }
-
-    let monitor = Unmanaged<FunctionKeyLongPressMonitor>.fromOpaque(refcon).takeUnretainedValue()
-    monitor.handle(eventType: type, event: event)
-    return Unmanaged.passUnretained(event)
 }

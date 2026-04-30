@@ -47,8 +47,6 @@ cat >"$INFO_PLIST" <<PLIST
   <string>$MIN_SYSTEM_VERSION</string>
   <key>LSUIElement</key>
   <true/>
-  <key>NSInputMonitoringUsageDescription</key>
-  <string>Risper observes the fn key and fallback shortcut to start and stop local dictation.</string>
   <key>NSAppTransportSecurity</key>
   <dict>
     <key>NSAllowsLocalNetworking</key>

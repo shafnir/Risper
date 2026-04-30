@@ -7,7 +7,7 @@ enum AccessibilityPermission {
     }
 
     static var statusDescription: String {
-        isTrusted ? "Granted" : "Required for paste"
+        isTrusted ? "Granted" : "Required for paste/fn"
     }
 
     @discardableResult

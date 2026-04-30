@@ -30,7 +30,7 @@ Check these before implementation starts:
 - Network setup window: internet access available only for initial dependency/model download; MVP runtime must work offline after setup.
 - Local model: Ivrit.ai `whisper-large-v3-turbo-ggml` `ggml-model.bin` downloaded to the chosen Application Support model path.
 - macOS permissions: user must be able to grant Microphone and Accessibility permissions to the app.
-- Trigger availability: target UX is long-press `fn`, matching Wispr Flow-style push-to-talk on built-in Mac keyboards. During early development, `Control+Option+Space` is the simple working trigger so recording, ASR, and paste can be built before low-level input monitoring.
+- Trigger availability: target UX is long-press `fn`, matching Wispr Flow-style push-to-talk on built-in Mac keyboards. During early development, `Control+Option+Space` is the simple working trigger so recording, ASR, and paste can be built before Accessibility-backed keyboard event monitoring.
 - Target apps for MVP QA: TextEdit or Notes, Chrome text fields, Cursor, and Slack installed or otherwise replaceable with agreed equivalents.
 - Org rollout prerequisites, post-MVP only: MDM access or Apple Developer Program decision for distribution.
 
@@ -46,7 +46,7 @@ Check these before implementation starts:
 - Force Hebrew transcription: language `he`, task `transcribe`, no translation, no language auto-detection.
 - Keep the model warm by running a local `whisper-server` process bound to `127.0.0.1`; do not shell out to a fresh `whisper-cli` process for each dictation except as a debug fallback.
 - Use pasteboard + synthetic Cmd+V for MVP text insertion, while preserving and restoring the user's clipboard.
-- Use `Control+Option+Space` first through the standard global hotkey path. Add bare `fn` long-press after the core dictation loop works, because it requires low-level event monitoring and a stable permission/signing story.
+- Use `Control+Option+Space` first through the standard global hotkey path. Add bare `fn` long-press after the core dictation loop works, because it requires Accessibility-trusted keyboard event monitoring and a stable permission/signing story.
 - Do not require an Apple paid developer account for MVP. Signing/notarization is a post-MVP distribution concern unless org policy requires it sooner.
 
 ## Technical Stack
@@ -101,7 +101,7 @@ Check these before implementation starts:
 - Add status/menu bar lifecycle.
 - Add microphone permission flow and `AVAudioEngine` recording.
 - Add global hotkey handling with `Control+Option+Space`.
-- Add low-level event-tap handling for long-press `fn` after the basic dictation loop works.
+- Add Accessibility-backed global `flagsChanged` handling for long-press `fn` after the basic dictation loop works.
 - Add local ASR server manager and transcription client.
 - Add Accessibility permission check.
 - Add pasteboard-preserving text injection into the focused app.

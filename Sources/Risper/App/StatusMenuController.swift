@@ -1,7 +1,25 @@
 import AppKit
 
+struct StatusMenuSnapshot {
+    let appStatus: String
+    let modelStatus: String
+    let asrServerStatus: String
+    let accessibilityStatus: String
+    let microphoneStatus: String
+    let functionKeyStatus: String
+    let fallbackStatus: String
+    let recordingStatus: String
+    let dictationStatus: String
+    let lastRecording: String
+    let activeTrigger: String
+    let lastTrigger: String
+    let hasLastTranscript: Bool
+}
+
 protocol StatusMenuControllerDelegate: AnyObject {
-    func refreshStatusMenu()
+    func copyLastTranscript()
+    func recheckStatus()
+    func restartASRServer()
     func requestMicrophonePermission()
     func openPrivacySettings()
 }
@@ -22,6 +40,7 @@ final class StatusMenuController: NSObject {
     private let lastRecordingItem = NSMenuItem()
     private let activeTriggerItem = NSMenuItem()
     private let lastTriggerItem = NSMenuItem()
+    private lazy var copyLastTranscriptItem = menuItem("Copy Last Transcript", action: #selector(copyLastTranscript))
 
     init(delegate: StatusMenuControllerDelegate) {
         self.delegate = delegate
@@ -29,56 +48,66 @@ final class StatusMenuController: NSObject {
         configureMenu()
     }
 
-    func refresh(
-        accessibilityStatus: String,
-        microphoneStatus: String,
-        modelStatus: String,
-        asrServerStatus: String,
-        functionKeyStatus: String,
-        fallbackStatus: String,
-        recordingStatus: String,
-        dictationStatus: String,
-        lastRecording: String,
-        activeTrigger: String,
-        lastTrigger: String
-    ) {
-        statusItem.button?.title = "Risper"
-        appStateItem.title = "App: Running"
-        modelItem.title = "Model: \(modelStatus)"
-        asrServerItem.title = "ASR Server: \(asrServerStatus)"
-        accessibilityItem.title = "Accessibility: \(accessibilityStatus)"
-        microphoneItem.title = "Microphone: \(microphoneStatus)"
-        functionKeyItem.title = "fn Trigger: \(functionKeyStatus)"
-        fallbackItem.title = "Shortcut: \(fallbackStatus)"
-        recordingItem.title = "Recording: \(recordingStatus)"
-        dictationItem.title = "Dictation: \(dictationStatus)"
-        lastRecordingItem.title = "Last Recording: \(lastRecording)"
-        activeTriggerItem.title = "Trigger: \(activeTrigger)"
-        lastTriggerItem.title = "Last Trigger: \(lastTrigger)"
+    func refresh(snapshot: StatusMenuSnapshot) {
+        statusItem.button?.title = snapshot.recordingStatus.hasPrefix("Recording") ? "Risper REC" : "Risper"
+        appStateItem.title = "App: \(snapshot.appStatus)"
+        modelItem.title = "Model: \(snapshot.modelStatus)"
+        asrServerItem.title = "ASR: \(snapshot.asrServerStatus)"
+        accessibilityItem.title = "Accessibility: \(snapshot.accessibilityStatus)"
+        microphoneItem.title = "Microphone: \(snapshot.microphoneStatus)"
+        functionKeyItem.title = "fn Long-Press: \(snapshot.functionKeyStatus)"
+        fallbackItem.title = "Fallback Shortcut: \(snapshot.fallbackStatus)"
+        recordingItem.title = "Recording: \(snapshot.recordingStatus)"
+        dictationItem.title = "Dictation: \(snapshot.dictationStatus)"
+        lastRecordingItem.title = "Last Recording: \(snapshot.lastRecording)"
+        activeTriggerItem.title = "Active Trigger: \(snapshot.activeTrigger)"
+        lastTriggerItem.title = "Last Trigger: \(snapshot.lastTrigger)"
+        copyLastTranscriptItem.isEnabled = snapshot.hasLastTranscript
     }
 
     private func configureMenu() {
         let menu = NSMenu()
+
+        menu.addItem(sectionHeader("Readiness"))
         menu.addItem(appStateItem)
         menu.addItem(modelItem)
         menu.addItem(asrServerItem)
+
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(sectionHeader("Permissions"))
         menu.addItem(accessibilityItem)
         menu.addItem(microphoneItem)
+
         menu.addItem(NSMenuItem.separator())
+        menu.addItem(sectionHeader("Trigger And Recording"))
         menu.addItem(functionKeyItem)
         menu.addItem(fallbackItem)
         menu.addItem(recordingItem)
+        menu.addItem(activeTriggerItem)
+
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(sectionHeader("Last Result"))
         menu.addItem(dictationItem)
         menu.addItem(lastRecordingItem)
-        menu.addItem(activeTriggerItem)
         menu.addItem(lastTriggerItem)
+
         menu.addItem(NSMenuItem.separator())
+        menu.addItem(sectionHeader("Actions"))
+        menu.addItem(copyLastTranscriptItem)
         menu.addItem(menuItem("Recheck Status", action: #selector(recheckStatus)))
+        menu.addItem(menuItem("Restart ASR Server", action: #selector(restartASRServer)))
         menu.addItem(menuItem("Request Microphone Permission", action: #selector(requestMicrophonePermission)))
         menu.addItem(menuItem("Open Privacy Settings", action: #selector(openPrivacySettings)))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(menuItem("Quit Risper", action: #selector(quit)))
+
         statusItem.menu = menu
+    }
+
+    private func sectionHeader(_ title: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        return item
     }
 
     private func menuItem(_ title: String, action: Selector) -> NSMenuItem {
@@ -87,8 +116,16 @@ final class StatusMenuController: NSObject {
         return item
     }
 
+    @objc private func copyLastTranscript() {
+        delegate?.copyLastTranscript()
+    }
+
     @objc private func recheckStatus() {
-        delegate?.refreshStatusMenu()
+        delegate?.recheckStatus()
+    }
+
+    @objc private func restartASRServer() {
+        delegate?.restartASRServer()
     }
 
     @objc private func requestMicrophonePermission() {

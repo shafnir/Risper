@@ -8,6 +8,20 @@ enum RisperConfiguration {
     static let asrHost = "127.0.0.1"
     static let asrPort = 8178
 
+    static let asrHealthURL: URL = {
+        var components = URLComponents()
+        components.scheme = "http"
+        components.host = asrHost
+        components.port = asrPort
+        components.path = "/health"
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Risper ASR health URL")
+        }
+
+        return url
+    }()
+
     static let asrInferenceURL: URL = {
         var components = URLComponents()
         components.scheme = "http"
