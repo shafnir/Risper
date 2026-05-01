@@ -86,7 +86,7 @@ final class ASRServerManager {
 
     init(
         fileManager: FileManager = .default,
-        modelURL: URL = RisperConfiguration.modelURL,
+        modelURL: URL = ModelLocator.modelURL,
         healthURL: URL = RisperConfiguration.asrHealthURL,
         host: String = RisperConfiguration.asrHost,
         port: Int = RisperConfiguration.asrPort,
