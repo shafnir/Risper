@@ -8,6 +8,9 @@ Package.resolved
 # Local app staging
 dist/
 
+# Generated app icon intermediates
+Resources/*.iconset/
+
 # Local ASR/model artifacts
 Models/
 models/

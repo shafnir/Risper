@@ -13,6 +13,7 @@ APP_MACOS="$APP_CONTENTS/MacOS"
 APP_RESOURCES="$APP_CONTENTS/Resources"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
+APP_ICON_SOURCE="$ROOT_DIR/Resources/AppIcon.icns"
 
 WHISPER_BUILD_DIR="$ROOT_DIR/third_party/whisper.cpp/build"
 WHISPER_SERVER_SOURCE="$WHISPER_BUILD_DIR/bin/whisper-server"
@@ -238,6 +239,7 @@ build_app_bundle() {
   rm -rf "$APP_BUNDLE"
   mkdir -p "$APP_MACOS" "$APP_RESOURCES"
   cp "$build_binary" "$APP_BINARY"
+  cp "$APP_ICON_SOURCE" "$APP_RESOURCES/AppIcon.icns"
   chmod +x "$APP_BINARY"
 
   cat >"$INFO_PLIST" <<PLIST
@@ -249,6 +251,8 @@ build_app_bundle() {
   <string>$APP_NAME</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleName</key>
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
