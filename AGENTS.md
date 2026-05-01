@@ -25,6 +25,15 @@
 - For microphone, hotkey, Accessibility, clipboard, or cross-app paste behavior, document any manual QA that could not be completed from the agent environment.
 - Do not add production dependencies, package managers, generated projects, or new build systems without explicit user approval.
 
+## Regression And Debugging Guardrails
+
+- When the user reports that the last commit worked, compare current runtime source files against `HEAD` before changing behavior. Treat the last-known-good runtime path as the baseline.
+- For regressions that appear after packaging, signing, bundling, or installer work, first inspect bundle identity, signing, `Info.plist`, installed app path, and TCC permission state before changing Swift runtime logic.
+- Keep packaging fixes separate from app-behavior fixes. Do not replace a working event-monitoring, permission, recording, or paste mechanism unless direct evidence shows that mechanism is the cause.
+- For microphone, Accessibility, hotkey, overlay, clipboard, or paste changes, verify the real workflow end to end: focus a text field, hold `fn`, confirm the recording indicator appears, release, wait for transcription, and confirm text is inserted at the original cursor.
+- Do not treat partial logs as success. Logs that show monitor startup, recording, transcription, or paste events must be paired with manual workflow verification when the behavior depends on macOS focus, permissions, or cross-app input.
+- Read `docs/debugging-macos-permissions.md` before diagnosing or changing macOS permissions, app signing, TCC, global hotkey, Accessibility, microphone, clipboard, or cross-app paste behavior.
+
 ## Engineering Standards
 
 - Optimize first for clarity, then simplicity, then concision. Code should be easy for the next engineer or agent to read, test, and change.
