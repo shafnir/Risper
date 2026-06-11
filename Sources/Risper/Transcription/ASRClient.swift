@@ -33,7 +33,11 @@ final class ASRClient {
         self.session = session
     }
 
-    func transcribe(recording: RecordingResult, completion: @escaping (Result<String, Error>) -> Void) {
+    func transcribe(
+        recording: RecordingResult,
+        language: DictationLanguage,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
         let audioData: Data
 
         do {
@@ -51,6 +55,7 @@ final class ASRClient {
         request.httpBody = Self.multipartBody(
             audioData: audioData,
             filename: recording.url.lastPathComponent,
+            language: language.whisperCode,
             boundary: boundary
         )
 
@@ -89,7 +94,7 @@ final class ASRClient {
         }.resume()
     }
 
-    private static func multipartBody(audioData: Data, filename: String, boundary: String) -> Data {
+    private static func multipartBody(audioData: Data, filename: String, language: String, boundary: String) -> Data {
         var body = Data()
 
         body.appendUTF8("--\(boundary)\r\n")
@@ -98,7 +103,7 @@ final class ASRClient {
         body.append(audioData)
         body.appendUTF8("\r\n")
 
-        appendField("language", value: "he", boundary: boundary, to: &body)
+        appendField("language", value: language, boundary: boundary, to: &body)
         appendField("translate", value: "false", boundary: boundary, to: &body)
         appendField("no_timestamps", value: "true", boundary: boundary, to: &body)
         appendField("temperature", value: "0.0", boundary: boundary, to: &body)

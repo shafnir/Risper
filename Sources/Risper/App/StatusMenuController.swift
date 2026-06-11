@@ -14,6 +14,7 @@ struct StatusMenuSnapshot {
     let activeTrigger: String
     let lastTrigger: String
     let hasLastTranscript: Bool
+    let selectedLanguage: DictationLanguage
 }
 
 protocol StatusMenuControllerDelegate: AnyObject {
@@ -22,6 +23,7 @@ protocol StatusMenuControllerDelegate: AnyObject {
     func restartASRServer()
     func requestMicrophonePermission()
     func openPrivacySettings()
+    func selectLanguage(_ language: DictationLanguage)
 }
 
 final class StatusMenuController: NSObject {
@@ -41,6 +43,7 @@ final class StatusMenuController: NSObject {
     private let activeTriggerItem = NSMenuItem()
     private let lastTriggerItem = NSMenuItem()
     private lazy var copyLastTranscriptItem = menuItem("Copy Last Transcript", action: #selector(copyLastTranscript))
+    private lazy var languageItems: [DictationLanguage: NSMenuItem] = makeLanguageItems()
 
     init(delegate: StatusMenuControllerDelegate) {
         self.delegate = delegate
@@ -63,6 +66,10 @@ final class StatusMenuController: NSObject {
         activeTriggerItem.title = "Active Trigger: \(snapshot.activeTrigger)"
         lastTriggerItem.title = "Last Trigger: \(snapshot.lastTrigger)"
         copyLastTranscriptItem.isEnabled = snapshot.hasLastTranscript
+
+        for (language, item) in languageItems {
+            item.state = language == snapshot.selectedLanguage ? .on : .off
+        }
     }
 
     private func configureMenu() {
@@ -92,6 +99,10 @@ final class StatusMenuController: NSObject {
         menu.addItem(lastTriggerItem)
 
         menu.addItem(NSMenuItem.separator())
+        menu.addItem(sectionHeader("Dictation Language"))
+        menu.addItem(languageMenuItem())
+
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(sectionHeader("Actions"))
         menu.addItem(copyLastTranscriptItem)
         menu.addItem(menuItem("Recheck Status", action: #selector(recheckStatus)))
@@ -102,6 +113,30 @@ final class StatusMenuController: NSObject {
         menu.addItem(menuItem("Quit Risper", action: #selector(quit)))
 
         statusItem.menu = menu
+    }
+
+    private func makeLanguageItems() -> [DictationLanguage: NSMenuItem] {
+        var items: [DictationLanguage: NSMenuItem] = [:]
+        for language in DictationLanguage.allCases {
+            let item = NSMenuItem(title: language.displayName, action: #selector(selectLanguage(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = language.rawValue
+            items[language] = item
+        }
+        return items
+    }
+
+    private func languageMenuItem() -> NSMenuItem {
+        let submenu = NSMenu()
+        for language in DictationLanguage.allCases {
+            if let item = languageItems[language] {
+                submenu.addItem(item)
+            }
+        }
+
+        let item = NSMenuItem(title: "Language", action: nil, keyEquivalent: "")
+        item.submenu = submenu
+        return item
     }
 
     private func sectionHeader(_ title: String) -> NSMenuItem {
@@ -134,6 +169,14 @@ final class StatusMenuController: NSObject {
 
     @objc private func openPrivacySettings() {
         delegate?.openPrivacySettings()
+    }
+
+    @objc private func selectLanguage(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let language = DictationLanguage(rawValue: rawValue) else {
+            return
+        }
+        delegate?.selectLanguage(language)
     }
 
     @objc private func quit() {

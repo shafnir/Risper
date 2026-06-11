@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
     private let asrServerManager = ASRServerManager()
     private let textInjector = TextInjector()
     private let recordingOverlay = RecordingOverlayController()
+    private let languageStore = DictationLanguageStore()
 
     private var recordingRefreshTimer: Timer?
     private var activeTrigger: TriggerSource?
@@ -174,6 +175,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
         NSWorkspace.shared.open(url)
     }
 
+    func selectLanguage(_ language: DictationLanguage) {
+        guard languageStore.current != language else { return }
+        languageStore.current = language
+        RisperLog.app.info("Dictation language set to \(language.rawValue, privacy: .public)")
+        refreshStatusMenu()
+    }
+
     private func refreshStatusMenu() {
         statusController.refresh(snapshot: StatusMenuSnapshot(
             appStatus: "Running",
@@ -188,7 +196,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
             lastRecording: audioRecorder.lastRecordingDescription,
             activeTrigger: activeTriggerDescription,
             lastTrigger: lastTriggerDescription,
-            hasLastTranscript: lastTranscript != nil
+            hasLastTranscript: lastTranscript != nil,
+            selectedLanguage: languageStore.current
         ))
     }
 
@@ -238,7 +247,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
         }
 
         pendingTranscriptionRecordings[recording.url] = recording
-        asrClient.transcribe(recording: recording) { [weak self] result in
+        asrClient.transcribe(recording: recording, language: languageStore.current) { [weak self] result in
             DispatchQueue.main.async {
                 self?.handleTranscriptionResult(result, source: source, recording: recording)
             }
