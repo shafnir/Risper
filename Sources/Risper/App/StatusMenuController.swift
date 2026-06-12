@@ -15,6 +15,12 @@ struct StatusMenuSnapshot {
     let lastTrigger: String
     let hasLastTranscript: Bool
     let selectedLanguage: DictationLanguage
+    let isRecording: Bool
+    let isBusy: Bool
+    let accessibilityGranted: Bool
+    let microphoneGranted: Bool
+    let modelPresent: Bool
+    let asrReady: Bool
 }
 
 protocol StatusMenuControllerDelegate: AnyObject {
@@ -30,6 +36,7 @@ final class StatusMenuController: NSObject {
     private weak var delegate: StatusMenuControllerDelegate?
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
+    private let headlineItem = NSMenuItem()
     private let appStateItem = NSMenuItem()
     private let modelItem = NSMenuItem()
     private let asrServerItem = NSMenuItem()
@@ -52,7 +59,11 @@ final class StatusMenuController: NSObject {
     }
 
     func refresh(snapshot: StatusMenuSnapshot) {
-        statusItem.button?.title = snapshot.recordingStatus.hasPrefix("Recording") ? "Risper REC" : "Risper"
+        updateStatusButton(isRecording: snapshot.isRecording)
+        headlineItem.attributedTitle = NSAttributedString(
+            string: headlineTitle(for: snapshot),
+            attributes: [.font: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)]
+        )
         appStateItem.title = "App: \(snapshot.appStatus)"
         modelItem.title = "Model: \(snapshot.modelStatus)"
         asrServerItem.title = "ASR: \(snapshot.asrServerStatus)"
@@ -74,45 +85,88 @@ final class StatusMenuController: NSObject {
 
     private func configureMenu() {
         let menu = NSMenu()
+        menu.autoenablesItems = false
 
-        menu.addItem(sectionHeader("Readiness"))
-        menu.addItem(appStateItem)
-        menu.addItem(modelItem)
-        menu.addItem(asrServerItem)
-
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(sectionHeader("Permissions"))
-        menu.addItem(accessibilityItem)
-        menu.addItem(microphoneItem)
+        headlineItem.isEnabled = false
+        menu.addItem(headlineItem)
 
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(sectionHeader("Trigger And Recording"))
-        menu.addItem(functionKeyItem)
-        menu.addItem(fallbackItem)
-        menu.addItem(recordingItem)
-        menu.addItem(activeTriggerItem)
-
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(sectionHeader("Last Result"))
-        menu.addItem(dictationItem)
-        menu.addItem(lastRecordingItem)
-        menu.addItem(lastTriggerItem)
-
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(sectionHeader("Dictation Language"))
         menu.addItem(languageMenuItem())
+        menu.addItem(copyLastTranscriptItem)
 
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(sectionHeader("Actions"))
-        menu.addItem(copyLastTranscriptItem)
-        menu.addItem(menuItem("Recheck Status", action: #selector(recheckStatus)))
-        menu.addItem(menuItem("Restart ASR Server", action: #selector(restartASRServer)))
-        menu.addItem(menuItem("Request Microphone Permission", action: #selector(requestMicrophonePermission)))
-        menu.addItem(menuItem("Open Privacy Settings", action: #selector(openPrivacySettings)))
+        menu.addItem(menuItem("Open Privacy Settings…", action: #selector(openPrivacySettings)))
+        menu.addItem(troubleshootingMenuItem())
+
         menu.addItem(NSMenuItem.separator())
         menu.addItem(menuItem("Quit Risper", action: #selector(quit)))
 
         statusItem.menu = menu
+    }
+
+    private func troubleshootingMenuItem() -> NSMenuItem {
+        let submenu = NSMenu()
+
+        submenu.addItem(sectionHeader("Readiness"))
+        submenu.addItem(appStateItem)
+        submenu.addItem(modelItem)
+        submenu.addItem(asrServerItem)
+
+        submenu.addItem(NSMenuItem.separator())
+        submenu.addItem(sectionHeader("Permissions"))
+        submenu.addItem(accessibilityItem)
+        submenu.addItem(microphoneItem)
+
+        submenu.addItem(NSMenuItem.separator())
+        submenu.addItem(sectionHeader("Trigger And Recording"))
+        submenu.addItem(functionKeyItem)
+        submenu.addItem(fallbackItem)
+        submenu.addItem(recordingItem)
+        submenu.addItem(activeTriggerItem)
+
+        submenu.addItem(NSMenuItem.separator())
+        submenu.addItem(sectionHeader("Last Result"))
+        submenu.addItem(dictationItem)
+        submenu.addItem(lastRecordingItem)
+        submenu.addItem(lastTriggerItem)
+
+        submenu.addItem(NSMenuItem.separator())
+        submenu.addItem(menuItem("Recheck Status", action: #selector(recheckStatus)))
+        submenu.addItem(menuItem("Restart ASR Server", action: #selector(restartASRServer)))
+        submenu.addItem(menuItem("Request Microphone Permission", action: #selector(requestMicrophonePermission)))
+
+        let item = NSMenuItem(title: "Troubleshooting", action: nil, keyEquivalent: "")
+        item.submenu = submenu
+        return item
+    }
+
+    private func headlineTitle(for snapshot: StatusMenuSnapshot) -> String {
+        if snapshot.isRecording { return "Recording…" }
+        if snapshot.isBusy { return "Transcribing…" }
+        if !snapshot.accessibilityGranted || !snapshot.microphoneGranted {
+            return "Setup needed — grant permissions"
+        }
+        if !snapshot.modelPresent { return "Setup needed — model missing" }
+        if !snapshot.asrReady { return "Starting…" }
+        return "Ready"
+    }
+
+    private func updateStatusButton(isRecording: Bool) {
+        guard let button = statusItem.button else { return }
+        button.title = ""
+
+        let symbolName = isRecording ? "mic.fill" : "mic"
+        let description = isRecording ? "Risper — recording" : "Risper"
+        let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: description)
+
+        if isRecording {
+            let config = NSImage.SymbolConfiguration(paletteColors: [.systemRed])
+            image?.isTemplate = false
+            button.image = image?.withSymbolConfiguration(config)
+        } else {
+            image?.isTemplate = true
+            button.image = image
+        }
     }
 
     private func makeLanguageItems() -> [DictationLanguage: NSMenuItem] {
@@ -134,7 +188,7 @@ final class StatusMenuController: NSObject {
             }
         }
 
-        let item = NSMenuItem(title: "Language", action: nil, keyEquivalent: "")
+        let item = NSMenuItem(title: "Dictation Language", action: nil, keyEquivalent: "")
         item.submenu = submenu
         return item
     }

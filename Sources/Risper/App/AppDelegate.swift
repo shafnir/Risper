@@ -197,7 +197,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, TriggerMonitorDelegate
             activeTrigger: activeTriggerDescription,
             lastTrigger: lastTriggerDescription,
             hasLastTranscript: lastTranscript != nil,
-            selectedLanguage: languageStore.current
+            selectedLanguage: languageStore.current,
+            isRecording: activeTrigger != nil,
+            isBusy: isDictationBusy,
+            accessibilityGranted: AccessibilityPermission.isTrusted,
+            microphoneGranted: MicrophonePermission.isGranted,
+            modelPresent: ModelLocator.isPresent,
+            asrReady: asrServerManager.isReady
         ))
     }
 

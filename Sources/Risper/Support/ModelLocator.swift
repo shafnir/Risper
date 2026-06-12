@@ -8,6 +8,10 @@ enum ModelLocator {
         resolveModelURL()
     }
 
+    static var isPresent: Bool {
+        existingModelURL() != nil
+    }
+
     static var statusDescription: String {
         guard let existingModelURL = existingModelURL() else {
             return "Missing"
