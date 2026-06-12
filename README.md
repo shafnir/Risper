@@ -71,6 +71,12 @@ and launches it. You may be asked for your Mac password (to write to
 `/Applications`). **No "could not verify Risper" warning appears** with this
 method — see [Why the Terminal install skips the warning](#why-the-terminal-install-skips-the-warning).
 
+> **Risper has no window.** It lives in your **menu bar** as a microphone icon —
+> double-clicking the app won't open anything on screen. Look for the icon at the
+> top-right of your screen:
+
+![Risper lives in the macOS menu bar as a microphone icon](docs/assets/risper-readme-menu-focus.png)
+
 Then finish the two permission steps:
 
 1. Grant **Microphone** permission when prompted.
@@ -138,12 +144,10 @@ published.
 
 ## Using Risper
 
-> **Risper has no window.** When you double-click the app, nothing opens on
-> screen — instead a **microphone icon appears in the macOS menu bar** (the
-> status bar at the top right of your screen). That icon *is* the app. If you
-> don't see it, it may be hidden behind other menu bar items when you have many
-> apps running — widen the menu bar or use a menu bar manager to reveal it.
-> Click the microphone icon to see status and options.
+> **Can't find Risper after launching it?** Remember it has no window — it's the
+> microphone icon in the menu bar. If you don't see it, it may be hidden behind
+> other menu bar items when many apps are running; widen the menu bar or use a
+> menu bar manager to reveal it. Click the icon for status and options.
 
 1. Launch Risper and confirm the menu bar item reports the model and ASR server
    as ready.
