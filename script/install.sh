@@ -29,10 +29,15 @@ fail() { printf 'install: error: %s\n' "$*" >&2; exit 1; }
 [[ "$(uname -s)" == "Darwin" ]] || fail "Risper requires macOS."
 [[ "$(uname -m)" == "arm64" ]] || fail "Risper requires an Apple Silicon (arm64) Mac."
 
+OS_MAJOR="$(sw_vers -productVersion 2>/dev/null | cut -d. -f1)"
+if [[ "$OS_MAJOR" =~ ^[0-9]+$ ]] && (( OS_MAJOR < 26 )); then
+  warn "Risper needs macOS 26 or newer (you have $(sw_vers -productVersion)); it may not launch."
+fi
+
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/risper-install.XXXXXX")"
 MOUNT_POINT=""
 cleanup() {
-  [[ -n "$MOUNT_POINT" && -d "$MOUNT_POINT" ]] && hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
+  [[ -n "$MOUNT_POINT" && -d "$MOUNT_POINT" ]] && hdiutil detach "$MOUNT_POINT" -force -quiet 2>/dev/null || true
   rm -rf "$WORK_DIR"
 }
 trap cleanup EXIT
@@ -48,7 +53,7 @@ curl -fSL --progress-bar -o "$DMG_PATH" "$DMG_URL" \
 # --- Optional integrity check ----------------------------------------------
 
 if EXPECTED="$(curl -fsSL "$CHECKSUM_URL" 2>/dev/null)"; then
-  EXPECTED="$(printf '%s' "$EXPECTED" | awk '{print $1}')"
+  EXPECTED="$(printf '%s' "$EXPECTED" | awk 'NR==1{print $1; exit}')"
   ACTUAL="$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')"
   if [[ "$EXPECTED" != "$ACTUAL" ]]; then
     fail "Checksum mismatch — refusing to install. Expected $EXPECTED, got $ACTUAL."
@@ -90,8 +95,9 @@ log "Installing $APP_NAME to $INSTALL_DIR..."
 $SUDO rm -rf "$APP_DEST"
 $SUDO cp -R "$SRC_APP" "$APP_DEST"
 
-hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
-MOUNT_POINT=""
+if hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null; then
+  MOUNT_POINT=""  # detached cleanly; the EXIT trap no longer needs to retry
+fi
 
 # Defensive: clear any quarantine flag in case the bundle was ever tagged.
 $SUDO xattr -dr com.apple.quarantine "$APP_DEST" 2>/dev/null || true
