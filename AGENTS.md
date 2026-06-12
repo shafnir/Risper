@@ -4,17 +4,15 @@
 
 - Risper is a local-first Hebrew dictation utility for macOS.
 - Runtime audio processing must stay local for the MVP. Do not introduce cloud ASR, telemetry, or transcript upload paths unless the user explicitly changes the product direction.
-- Treat `specs.md` as the product and architecture source of truth, and `tasks.md` as the implementation queue.
+- Treat `specs.md` as the product and architecture source of truth.
 - The app is a SwiftPM-first AppKit macOS app. Use Swift, AppKit, AVFoundation, Carbon/CoreGraphics, and local `whisper.cpp` integration before adding new frameworks.
 
 ## Agent Workflow
 
-- Before implementation, read the relevant parts of `specs.md`, `tasks.md`, `Package.swift`, scripts, and source files touched by the task.
+- Before implementation, read the relevant parts of `specs.md`, `Package.swift`, scripts, and source files touched by the task.
 - For macOS app development, always use the `Build macOS Apps` plugin and its relevant task-specific skills before planning or editing code.
-- Prefer the next pending task in `tasks.md` unless the user directs otherwise.
 - Keep changes small, coherent, and reversible. Separate broad structural refactors from feature or bug-fix changes unless the refactor is required to complete the task safely.
 - When the user asks to fix several code-review findings, launch sub-agents to handle independent fixes in parallel where the work can be cleanly separated. Keep tightly coupled or blocking fixes local, and integrate and verify all results before finishing.
-- Mark a task done in `tasks.md` only after the implementation is complete and the relevant verification has passed or the remaining manual gap is clearly documented.
 - Do not overwrite or revert unrelated user changes. If the worktree is dirty, work with the existing changes.
 
 ## Build And Verification
@@ -39,7 +37,7 @@
 - Optimize first for clarity, then simplicity, then concision. Code should be easy for the next engineer or agent to read, test, and change.
 - Keep responsibilities cohesive. Avoid god objects, god files, and utility dumping grounds. When behavior naturally splits into separate domains, extract along stable domain boundaries rather than by incidental implementation detail.
 - Maintain a single source of truth for configuration, paths, hotkeys, permission state, model/server settings, transcript state, and temp-file policy. If data is cached, derived, or duplicated for performance, make the owner and lifetime explicit.
-- Avoid speculative generality. Build the behavior required by `specs.md` and `tasks.md`; defer abstractions until they remove real duplication or clarify a real boundary.
+- Avoid speculative generality. Build the behavior required by `specs.md`; defer abstractions until they remove real duplication or clarify a real boundary.
 - Prefer proven platform APIs and existing project scripts over bespoke DIY implementations. If custom machinery is necessary, keep it narrow and explain the reason in code or docs.
 - When implementing or fixing behavior, identify the underlying invariant, lifecycle, or failure mode before editing. Solve the class of problem across the relevant local surface, not only the visible symptom. For resources, permissions, temporary state, user data, process/global state, and async flows, define acquisition, mutation, cleanup, cancellation, failure, and interruption behavior explicitly where relevant.
 - Keep code secure by default: prefer least-privilege permissions, narrow local-only exceptions, validated inputs, safe process/network boundaries, and privacy-preserving failure behavior.

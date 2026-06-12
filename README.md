@@ -11,21 +11,24 @@ path and no transcript upload path.
 
 ## Install For Non-Developers
 
-Use this path for manual internal pilots. You do not need Xcode, Homebrew, the
+Use this path to install the prebuilt app. You do not need Xcode, Homebrew, the
 source repo, a separate `whisper.cpp` build, or a separate model download.
 
-1. Open `dist/Risper-internal-offline-arm64.dmg`.
+1. Download `Risper-offline-arm64.dmg` from the latest release and open it.
 2. Drag `Risper.app` to Applications.
 3. Launch `/Applications/Risper.app`.
-4. If macOS blocks first launch, right-click `Risper.app`, choose `Open`, and confirm.
+4. The first launch is blocked because the app is not notarized. Open
+   `System Settings > Privacy & Security`, scroll to the message that Risper was
+   blocked, and click `Open Anyway`. Confirm, then launch Risper again.
 5. Grant Microphone permission when prompted.
 6. Grant Accessibility permission in System Settings > Privacy & Security > Accessibility.
 7. Quit and relaunch Risper after granting Accessibility permission.
 
-The internal DMG bundles `Risper.app`, `whisper-server`, the required
-`whisper.cpp` dylibs, and the Ivrit.ai Hebrew model. It is locally signed for
-pilot testing, but it is not Developer ID-signed or notarized. A first-launch
-Gatekeeper override is expected until a Developer ID distribution path is added.
+The DMG bundles `Risper.app`, `whisper-server`, the required `whisper.cpp`
+dylibs, and the Ivrit.ai Hebrew model. It runs on Apple Silicon Macs (arm64)
+without any developer tools. The build is locally signed but **not** Developer
+ID-signed or notarized, so the one-time `Open Anyway` Gatekeeper override above
+is expected until a notarized distribution path is added.
 
 ## What It Does
 
@@ -134,10 +137,10 @@ script/build_and_run.sh --verify
 
 The staged app is written to `dist/Risper.app`.
 
-## Package Internal DMG
+## Package The Offline DMG
 
 Create a stable local code-signing identity before packaging. This helps macOS
-keep Accessibility trust more stable across internal builds:
+keep Accessibility trust more stable across builds:
 
 ```bash
 script/setup_local_codesign.sh
@@ -153,7 +156,7 @@ script/package_internal.sh
 The package is written to:
 
 ```text
-dist/Risper-internal-offline-arm64.dmg
+dist/Risper-offline-arm64.dmg
 ```
 
 The packaging machine must have the local `whisper.cpp` build and Ivrit.ai model
@@ -288,6 +291,15 @@ The MVP intentionally stays narrow:
 - No transcript editor.
 - No cloud fallback.
 - No updater.
-- Internal offline DMG only; no public notarized installer yet.
+- Offline DMG only; no notarized installer yet.
 
 See [`specs.md`](specs.md) for the product and architecture source of truth.
+
+## License
+
+Risper is released under the MIT License. See [`LICENSE`](LICENSE).
+
+Risper bundles third-party components (the `whisper.cpp` runtime, MIT, and the
+Ivrit.ai Hebrew model, Apache-2.0) under their own licenses. Both permit
+redistribution, including bundling the model weights in the offline DMG. See
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) for attribution details.

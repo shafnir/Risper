@@ -26,12 +26,12 @@ MODEL_SOURCE="$HOME/Library/Application Support/Risper/Models/ivrit-large-v3-tur
 MODEL_DEST_DIR="$APP_RESOURCES/Models/ivrit-large-v3-turbo"
 MODEL_DEST="$MODEL_DEST_DIR/ggml-model.bin"
 
-DMG_NAME="Risper-internal-offline-arm64.dmg"
+DMG_NAME="Risper-offline-arm64.dmg"
 DMG_PATH="$DIST_DIR/$DMG_NAME"
-DMG_RW_PATH="$DIST_DIR/Risper-internal-offline-arm64-rw.dmg"
+DMG_RW_PATH="$DIST_DIR/Risper-offline-arm64-rw.dmg"
 DMG_STAGE="$DIST_DIR/dmg-staging"
 DMG_MOUNT_DIR="$DIST_DIR/dmg-mount"
-DMG_VOLUME_NAME="Risper Internal"
+DMG_VOLUME_NAME="Risper"
 DMG_BACKGROUND_DIR_NAME=".background"
 DMG_BACKGROUND_NAME="background.png"
 DMG_BACKGROUND_PATH="$DMG_STAGE/$DMG_BACKGROUND_DIR_NAME/$DMG_BACKGROUND_NAME"
@@ -258,7 +258,7 @@ build_app_bundle() {
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.0-internal</string>
+  <string>0.1.0</string>
   <key>CFBundleVersion</key>
   <string>1</string>
   <key>LSMinimumSystemVersion</key>
@@ -413,7 +413,7 @@ drawCentered(
     color: NSColor(calibratedRed: 0.18, green: 0.27, blue: 0.30, alpha: 1.0)
 )
 drawCentered(
-    "Internal offline build - local ASR; Microphone + Accessibility required",
+    "Offline build - local ASR; Microphone + Accessibility required",
     y: 58,
     font: NSFont.systemFont(ofSize: 13, weight: .regular),
     color: NSColor(calibratedRed: 0.38, green: 0.46, blue: 0.48, alpha: 1.0)
@@ -473,7 +473,7 @@ tell application "Finder"
 
     set position of item "$APP_NAME.app" to {170, 205}
     set position of item "Applications" to {470, 205}
-    set position of item "README - Internal Build.txt" to {320, 330}
+    set position of item "README.txt" to {320, 330}
 
     update without registering applications
     delay 2
@@ -510,8 +510,8 @@ create_dmg() {
   ln -s /Applications "$DMG_STAGE/Applications"
   generate_dmg_background
 
-  cat >"$DMG_STAGE/README - Internal Build.txt" <<README
-Risper Internal Offline Build
+  cat >"$DMG_STAGE/README.txt" <<README
+Risper Offline Build
 
 This DMG contains a self-contained Risper.app with the local whisper.cpp runtime
 and the bundled Ivrit.ai Hebrew model. It does not need the source repo or an
@@ -519,14 +519,16 @@ internet connection after install.
 
 Install:
 1. Drag Risper.app to Applications.
-2. If macOS blocks first launch, right-click Risper.app and choose Open.
+2. The first launch is blocked because the app is not notarized. Open
+   System Settings > Privacy & Security, find the message that Risper was
+   blocked, and click Open Anyway. Then launch Risper again.
 3. Grant Microphone permission when prompted.
 4. Grant Accessibility permission from System Settings > Privacy & Security > Accessibility.
    Risper uses Accessibility for long-press fn detection and cursor insertion.
    If Risper already appears enabled but still reports Accessibility as required,
    remove Risper from the list, add /Applications/Risper.app again, and relaunch.
 
-This build is locally signed for internal testing and is not notarized.
+This build is locally signed and is not notarized.
 README
 
   hdiutil create -volname "$DMG_VOLUME_NAME" -srcfolder "$DMG_STAGE" -ov -format UDRW -fs HFS+ "$DMG_RW_PATH"

@@ -1,5 +1,8 @@
 .DS_Store
 
+# Local agent/editor tooling
+.codex/
+
 # SwiftPM
 .build/
 .swiftpm/

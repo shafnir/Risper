@@ -11,9 +11,8 @@ The product should feel like a minimal Wispr/Whisper Flow-style workflow, but al
 
 ## Current Environment
 
-- Workspace: project directory at `/Users/developer/Github/Risper`.
-- Target machine: Apple Silicon (`arm64`), macOS 26.3.1.
-- Installed and selected: Xcode 26.4.1 at `/Applications/Xcode.app/Contents/Developer`, Swift 6.3.1, Apple Metal compiler, Homebrew, `cmake`, and `ffmpeg`.
+- Target machine: Apple Silicon (`arm64`), macOS 26 or newer.
+- Required toolchain: full Xcode with the Swift toolchain selected, Apple Metal compiler, Homebrew, `cmake`, and `ffmpeg`.
 - Local model present: Ivrit.ai `whisper-large-v3-turbo-ggml` `ggml-model.bin` under `~/Library/Application Support/Risper/Models/ivrit-large-v3-turbo/`.
 - Development implication: SwiftPM-first app bootstrap can proceed; `whisper.cpp` Metal build is now feasible in Phase 1.
 
