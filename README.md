@@ -138,6 +138,13 @@ published.
 
 ## Using Risper
 
+> **Risper has no window.** When you double-click the app, nothing opens on
+> screen — instead a **microphone icon appears in the macOS menu bar** (the
+> status bar at the top right of your screen). That icon *is* the app. If you
+> don't see it, it may be hidden behind other menu bar items when you have many
+> apps running — widen the menu bar or use a menu bar manager to reveal it.
+> Click the microphone icon to see status and options.
+
 1. Launch Risper and confirm the menu bar item reports the model and ASR server
    as ready.
 2. Focus a text field in any app.
@@ -164,6 +171,7 @@ The menu bar item also gives you:
 
 | Symptom | Fix |
 | --- | --- |
+| **Double-clicked the app and nothing happened** | Expected — Risper has no window. Look for the **microphone icon in the menu bar** (top-right of the screen). If it's not visible, it may be hidden behind other menu bar items — see [Using Risper](#using-risper). |
 | **"Risper" Not Opened** / *"Apple could not verify… free of malware"* | Expected — see [Get past the first-launch warning](#get-past-the-first-launch-warning). Click **Done** (not "Move to Trash"), then **System Settings → Privacy & Security → Open Anyway**. |
 | Menu shows **`Model: Missing`** | The bundled model didn't load. Reinstall from the latest DMG. |
 | Menu shows **`ASR: Missing whisper-server`** | Reinstall from the latest DMG. |
