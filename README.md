@@ -9,12 +9,18 @@ path and no transcript upload path.
 
 ![Risper local Hebrew dictation hero](docs/assets/risper-readme-hero.png)
 
+### ⬇️ [Download the latest Risper for macOS (Apple Silicon)](https://github.com/shafnir/Risper/releases/latest/download/Risper-offline-arm64.dmg)
+
+This link always points to the most recent release. See
+[all releases](https://github.com/shafnir/Risper/releases/latest) for notes.
+
 ## Install For Non-Developers
 
 Use this path to install the prebuilt app. You do not need Xcode, Homebrew, the
 source repo, a separate `whisper.cpp` build, or a separate model download.
 
-1. Download `Risper-offline-arm64.dmg` from the latest release and open it.
+1. [Download `Risper-offline-arm64.dmg`](https://github.com/shafnir/Risper/releases/latest/download/Risper-offline-arm64.dmg)
+   and open it.
 2. Drag `Risper.app` to Applications.
 3. Launch `/Applications/Risper.app`.
 4. The first launch is blocked because the app is not notarized. Open
