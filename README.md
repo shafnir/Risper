@@ -25,6 +25,8 @@ This link always points to the newest release. Browse
 - [For Users](#for-users) — install and use the app (no developer tools)
   - [Requirements](#requirements)
   - [Install](#install)
+    - [Quick install (recommended)](#quick-install-recommended)
+    - [Manual install (DMG)](#manual-install-dmg)
   - [Using Risper](#using-risper)
   - [Troubleshooting](#troubleshooting)
 - [For Developers](#for-developers) — build, package, and contribute
@@ -56,22 +58,83 @@ DMG is self-contained.
 
 ## Install
 
+### Quick install (recommended)
+
+Paste this into **Terminal** and press Return:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shafnir/Risper/main/script/install.sh | bash
+```
+
+It downloads the latest release, installs **Risper.app** into `/Applications`,
+and launches it. You may be asked for your Mac password (to write to
+`/Applications`). **No "could not verify Risper" warning appears** with this
+method — see [Why the Terminal install skips the warning](#why-the-terminal-install-skips-the-warning).
+
+Then finish the two permission steps:
+
+1. Grant **Microphone** permission when prompted.
+2. Grant **Accessibility** permission in
+   **System Settings → Privacy & Security → Accessibility**, enable Risper, then
+   **quit and relaunch Risper** so macOS applies the new trust.
+
+### Manual install (DMG)
+
+Prefer to download by hand?
+
 1. [**Download `Risper-offline-arm64.dmg`**](https://github.com/shafnir/Risper/releases/latest/download/Risper-offline-arm64.dmg)
    and open it.
 2. Drag **Risper.app** into **Applications**.
 3. Launch `/Applications/Risper.app`.
-4. **First launch is blocked** because the app is not notarized yet. Open
-   **System Settings → Privacy & Security**, scroll to the message that Risper
-   was blocked, and click **Open Anyway**. Confirm, then launch Risper again.
-5. Grant **Microphone** permission when prompted.
-6. Grant **Accessibility** permission in
-   **System Settings → Privacy & Security → Accessibility**.
-7. **Quit and relaunch Risper** so macOS applies the new Accessibility trust.
+4. **Expect a "could not verify Risper" warning on first launch — this is
+   normal** with the manual download. See
+   [Get past the first-launch warning](#get-past-the-first-launch-warning), then
+   continue.
+5. Grant **Microphone** and **Accessibility** permissions as above, then quit
+   and relaunch Risper.
 
-> The DMG bundles `Risper.app`, the `whisper-server` runtime, the required
-> `whisper.cpp` libraries, and the Ivrit.ai Hebrew model. It is locally signed
-> but **not** Developer ID-signed or notarized, so the one-time **Open Anyway**
-> step above is expected until a notarized build is published.
+### Get past the first-launch warning
+
+> This only happens with the **manual DMG** download. The
+> [Quick install](#quick-install-recommended) above avoids it entirely.
+
+The first time you open a browser-downloaded Risper, macOS shows a dialog titled
+**"Risper" Not Opened** that says *"Apple could not verify 'Risper' is free of
+malware…"*. **This is expected and Risper is safe** — speech recognition runs
+entirely on your Mac with no network calls (see [Privacy](#privacy)). The
+warning appears only because the app is not yet notarized by Apple, not because
+anything is wrong with it.
+
+> ⚠️ **Do not click "Move to Trash."** That deletes the app. The dialog has no
+> "Open" button by design — you approve it in System Settings instead.
+
+To open it:
+
+1. In the warning dialog, click **Done**.
+2. Open **System Settings → Privacy & Security** and scroll down to the message
+   *"Risper" was blocked to protect your Mac.*
+3. Click **Open Anyway**, then confirm with your password or Touch ID.
+4. Launch Risper again — it now opens normally, and you won't be asked again.
+
+**Faster alternative (Terminal):** clear the download flag in one command, then
+just open the app:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Risper.app
+```
+
+### Why the Terminal install skips the warning
+
+The DMG bundles `Risper.app`, the `whisper-server` runtime, the `whisper.cpp`
+libraries, and the Ivrit.ai Hebrew model. It is locally signed but **not**
+Developer ID-signed or notarized by Apple.
+
+macOS only shows the Gatekeeper warning for apps carrying a **quarantine flag**,
+which is attached to anything downloaded through a **web browser**. The Quick
+install uses `curl`, which does **not** set that flag, so Gatekeeper never
+blocks the app. The manual DMG path is browser-downloaded, so it gets the flag
+and the one-time approval above is expected — until a notarized build is
+published.
 
 ## Using Risper
 
@@ -101,7 +164,7 @@ The menu bar item also gives you:
 
 | Symptom | Fix |
 | --- | --- |
-| First launch blocked / "cannot be opened" | Expected — see step 4 above (**System Settings → Privacy & Security → Open Anyway**). |
+| **"Risper" Not Opened** / *"Apple could not verify… free of malware"* | Expected — see [Get past the first-launch warning](#get-past-the-first-launch-warning). Click **Done** (not "Move to Trash"), then **System Settings → Privacy & Security → Open Anyway**. |
 | Menu shows **`Model: Missing`** | The bundled model didn't load. Reinstall from the latest DMG. |
 | Menu shows **`ASR: Missing whisper-server`** | Reinstall from the latest DMG. |
 | **`fn Long-Press`** says Accessibility is required | Grant Accessibility to `/Applications/Risper.app`, then quit and relaunch. If it's already listed but still asks, remove Risper from the list, add `/Applications/Risper.app` again, and relaunch. |
