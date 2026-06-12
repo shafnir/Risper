@@ -1,96 +1,161 @@
 # Risper
 
-Local-first Hebrew dictation for macOS.
+**Local-first Hebrew dictation for macOS.**
 
-Risper is a tiny menu bar app that lets you hold a global trigger, speak Hebrew,
-release, and insert the transcript into the app you were already typing in. The
-MVP runs speech recognition locally with `whisper.cpp`; there is no cloud ASR
-path and no transcript upload path.
+Risper is a tiny menu bar app: hold a key, speak Hebrew, release, and the
+transcript is inserted into whatever app you were already typing in. Speech
+recognition runs entirely on your Mac with `whisper.cpp` — there is **no cloud
+ASR and no transcript upload**.
 
 ![Risper local Hebrew dictation hero](docs/assets/risper-readme-hero.png)
 
+![Platform](https://img.shields.io/badge/platform-macOS%2026%2B%20·%20Apple%20Silicon-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Latest release](https://img.shields.io/github/v/release/shafnir/Risper)
+
 ### ⬇️ [Download the latest Risper for macOS (Apple Silicon)](https://github.com/shafnir/Risper/releases/latest/download/Risper-offline-arm64.dmg)
 
-This link always points to the most recent release. See
-[all releases](https://github.com/shafnir/Risper/releases/latest) for notes.
+This link always points to the newest release. Browse
+[all releases](https://github.com/shafnir/Risper/releases) for notes.
 
-## Install For Non-Developers
+---
 
-Use this path to install the prebuilt app. You do not need Xcode, Homebrew, the
-source repo, a separate `whisper.cpp` build, or a separate model download.
+## Contents
 
-1. [Download `Risper-offline-arm64.dmg`](https://github.com/shafnir/Risper/releases/latest/download/Risper-offline-arm64.dmg)
-   and open it.
-2. Drag `Risper.app` to Applications.
-3. Launch `/Applications/Risper.app`.
-4. The first launch is blocked because the app is not notarized. Open
-   `System Settings > Privacy & Security`, scroll to the message that Risper was
-   blocked, and click `Open Anyway`. Confirm, then launch Risper again.
-5. Grant Microphone permission when prompted.
-6. Grant Accessibility permission in System Settings > Privacy & Security > Accessibility.
-7. Quit and relaunch Risper after granting Accessibility permission.
+- [For Users](#for-users) — install and use the app (no developer tools)
+  - [Requirements](#requirements)
+  - [Install](#install)
+  - [Using Risper](#using-risper)
+  - [Troubleshooting](#troubleshooting)
+- [For Developers](#for-developers) — build, package, and contribute
+  - [Developer requirements](#developer-requirements)
+  - [Build and run from source](#build-and-run-from-source)
+  - [Set up the local ASR runtime](#set-up-the-local-asr-runtime)
+  - [Package the offline DMG](#package-the-offline-dmg)
+  - [Verify transcription](#verify-transcription)
+  - [Logs and debugging](#logs-and-debugging)
+  - [Project layout](#project-layout)
+- [How It Works](#how-it-works)
+- [Privacy](#privacy)
+- [Scope](#scope)
+- [License](#license)
 
-The DMG bundles `Risper.app`, `whisper-server`, the required `whisper.cpp`
-dylibs, and the Ivrit.ai Hebrew model. It runs on Apple Silicon Macs (arm64)
-without any developer tools. The build is locally signed but **not** Developer
-ID-signed or notarized, so the one-time `Open Anyway` Gatekeeper override above
-is expected until a notarized distribution path is added.
+---
 
-## What It Does
+# For Users
 
-- Records only while you hold the dictation trigger.
-- Converts microphone input to a local 16 kHz mono WAV.
-- Sends the audio to a local `whisper.cpp` server on `127.0.0.1:8178`.
-- Forces Hebrew transcription instead of language auto-detection or translation.
-- Inserts the cleaned transcript into the focused app with a temporary paste.
-- Restores your clipboard after insertion whenever the pasteboard is unchanged.
+You do **not** need Xcode, Homebrew, the source code, or any model download. The
+DMG is self-contained.
 
-Risper now has an internal offline DMG for pilot installs. Internal testers can
-install the app without the source repo, Xcode, Homebrew, or local build tools.
-Developer tools are still required only on the machine that builds the app or
-creates a new DMG.
+## Requirements
 
-## Prerequisites
-
-For internal testers installing the offline DMG:
-
-- Apple Silicon Mac.
+- Apple Silicon Mac (arm64).
 - macOS 26 or newer.
-- Ability to grant Microphone and Accessibility permissions in macOS System Settings.
+- Permission to grant **Microphone** and **Accessibility** access in System
+  Settings.
 
-The internal offline DMG bundles `Risper.app`, `whisper-server`, the required
-`whisper.cpp` dylibs, and the Ivrit.ai Hebrew model. Testers do not need Xcode,
-Homebrew, `cmake`, `ffmpeg`, `jq`, the source checkout, or a separate model
-download.
+## Install
 
-For developers building from source or creating a new internal DMG:
+1. [**Download `Risper-offline-arm64.dmg`**](https://github.com/shafnir/Risper/releases/latest/download/Risper-offline-arm64.dmg)
+   and open it.
+2. Drag **Risper.app** into **Applications**.
+3. Launch `/Applications/Risper.app`.
+4. **First launch is blocked** because the app is not notarized yet. Open
+   **System Settings → Privacy & Security**, scroll to the message that Risper
+   was blocked, and click **Open Anyway**. Confirm, then launch Risper again.
+5. Grant **Microphone** permission when prompted.
+6. Grant **Accessibility** permission in
+   **System Settings → Privacy & Security → Accessibility**.
+7. **Quit and relaunch Risper** so macOS applies the new Accessibility trust.
 
-- Apple Silicon Mac.
-- macOS 26 or newer. The Swift package currently targets macOS 26.0.
-- Full Xcode or Swift toolchain available from the command line.
-- Homebrew for `cmake`, `ffmpeg`, and `jq`.
-- A local `whisper.cpp` build with `whisper-server`.
-- The Ivrit.ai `whisper-large-v3-turbo-ggml` model file.
+> The DMG bundles `Risper.app`, the `whisper-server` runtime, the required
+> `whisper.cpp` libraries, and the Ivrit.ai Hebrew model. It is locally signed
+> but **not** Developer ID-signed or notarized, so the one-time **Open Anyway**
+> step above is expected until a notarized build is published.
 
-Install the common command-line tools:
+## Using Risper
 
-```bash
-brew install cmake ffmpeg jq
+1. Launch Risper and confirm the menu bar item reports the model and ASR server
+   as ready.
+2. Focus a text field in any app.
+3. Hold **`fn`** until the recording overlay appears.
+4. Speak Hebrew.
+5. Release **`fn`**.
+6. Wait for the transcript to be inserted at your cursor.
+
+If `fn` monitoring is unavailable, use the fallback shortcut:
+
+```text
+Control + Option + Space
 ```
 
-`lsof`, `say`, `codesign`, and `security` are provided by macOS.
+The menu bar item also gives you:
 
-## Local ASR Setup
+- **Copy Last Transcript**
+- **Restart ASR Server**
+- **Recheck Status**
+- **Request Microphone Permission** / **Open Privacy Settings**
+- Current model, permission, trigger, recording, and ASR state
 
-This section is only needed for developers building from source or creating a
-new internal DMG. The internal offline DMG already includes the ASR runtime and
-model.
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| First launch blocked / "cannot be opened" | Expected — see step 4 above (**System Settings → Privacy & Security → Open Anyway**). |
+| Menu shows **`Model: Missing`** | The bundled model didn't load. Reinstall from the latest DMG. |
+| Menu shows **`ASR: Missing whisper-server`** | Reinstall from the latest DMG. |
+| **`fn Long-Press`** says Accessibility is required | Grant Accessibility to `/Applications/Risper.app`, then quit and relaunch. If it's already listed but still asks, remove Risper from the list, add `/Applications/Risper.app` again, and relaunch. |
+| Dictation records but no text appears | Check Accessibility permission, and try a simple target like **TextEdit** first. |
+
+For permission-specific debugging, see
+[`docs/debugging-macos-permissions.md`](docs/debugging-macos-permissions.md).
+
+---
+
+# For Developers
+
+This section is for building Risper from source or producing a new DMG.
+
+## Developer requirements
+
+- Apple Silicon Mac, macOS 26 or newer (the Swift package targets macOS 26.0).
+- Full Xcode or the Swift toolchain available from the command line.
+- Homebrew, for `cmake`, `ffmpeg`, and `jq`:
+  ```bash
+  brew install cmake ffmpeg jq
+  ```
+- A local `whisper.cpp` build with `whisper-server` (see below).
+- The Ivrit.ai `whisper-large-v3-turbo-ggml` model file (see below).
+
+`lsof`, `say`, `codesign`, and `security` ship with macOS.
+
+## Build and run from source
+
+```bash
+# Build the Swift package
+swift build
+
+# (Recommended) create a stable local code-signing identity so macOS keeps
+# Accessibility trust across rebuilds
+script/setup_local_codesign.sh
+
+# Build, stage, sign, and launch the app bundle (written to dist/Risper.app)
+script/build_and_run.sh
+
+# Build and verify the app launches
+script/build_and_run.sh --verify
+```
+
+## Set up the local ASR runtime
+
+> Only needed for source builds and packaging. The downloadable DMG already
+> includes the runtime and model.
 
 Risper looks for `whisper-server` in the bundled app resources, in
-`third_party/whisper.cpp/build/bin/whisper-server`, or in the path supplied by
-`RISPER_WHISPER_SERVER`.
+`third_party/whisper.cpp/build/bin/whisper-server`, or in the path given by the
+`RISPER_WHISPER_SERVER` environment variable.
 
-Build `whisper.cpp` locally:
+Build `whisper.cpp` with Metal:
 
 ```bash
 mkdir -p third_party
@@ -99,7 +164,7 @@ cmake -S third_party/whisper.cpp -B third_party/whisper.cpp/build -DGGML_METAL=O
 cmake --build third_party/whisper.cpp/build --config Release -j
 ```
 
-Download the Hebrew model to the default app support path:
+Download the Hebrew model to the default Application Support path:
 
 ```bash
 mkdir -p "$HOME/Library/Application Support/Risper/Models/ivrit-large-v3-turbo"
@@ -108,109 +173,32 @@ curl -L \
   "https://huggingface.co/ivrit-ai/whisper-large-v3-turbo-ggml/resolve/main/ggml-model.bin"
 ```
 
-The model is large, so the initial download can take a while. After setup,
-normal dictation runs locally and can work offline.
+The model is large, so the first download takes a while. After setup, dictation
+runs locally and works offline.
 
-## Build And Run From Source
-
-Use this path for development. Internal testers should install from the DMG
-instead.
-
-Build the Swift package:
+## Package the offline DMG
 
 ```bash
-swift build
-```
-
-For local development, create a stable local code-signing identity first. This
-helps macOS keep Accessibility trust across rebuilds:
-
-```bash
+# Create a stable local code-signing identity first (recommended)
 script/setup_local_codesign.sh
-```
 
-Build, stage, sign, and launch the app bundle:
-
-```bash
-script/build_and_run.sh
-```
-
-Verify that the app launches:
-
-```bash
-script/build_and_run.sh --verify
-```
-
-The staged app is written to `dist/Risper.app`.
-
-## Package The Offline DMG
-
-Create a stable local code-signing identity before packaging. This helps macOS
-keep Accessibility trust more stable across builds:
-
-```bash
-script/setup_local_codesign.sh
-```
-
-Build the release app, bundle the local ASR runtime and model, sign the app, and
-create the offline DMG:
-
-```bash
+# Build the release app, bundle the ASR runtime + model, sign, and create the DMG
 script/package_internal.sh
 ```
 
-The package is written to:
+Output:
 
 ```text
 dist/Risper-offline-arm64.dmg
 ```
 
-The packaging machine must have the local `whisper.cpp` build and Ivrit.ai model
-available. Machines that install from the DMG do not.
+The packaging machine needs the local `whisper.cpp` build and the Ivrit.ai model
+present. Machines that install from the DMG do not.
 
-## Permissions
+## Verify transcription
 
-Risper needs two macOS permissions:
-
-- Microphone: required to record dictation audio.
-- Accessibility: required for the `fn` long-press monitor and for synthetic
-  `Cmd+V` insertion into the focused app.
-
-Open the Risper menu bar item and use:
-
-- `Request Microphone Permission`
-- `Open Privacy Settings`
-- `Recheck Status`
-
-After granting Accessibility permission, relaunch Risper so macOS applies the
-new trust state.
-
-## How To Use
-
-1. Launch Risper and confirm the menu bar item says the model and ASR server are ready.
-2. Focus a text field in any target app.
-3. Hold `fn` until the recording overlay appears.
-4. Speak Hebrew.
-5. Release `fn`.
-6. Wait for the transcript to be inserted at the original cursor.
-
-If `fn` monitoring is unavailable, use the fallback shortcut:
-
-```text
-Control + Option + Space
-```
-
-The menu bar item also includes:
-
-- `Copy Last Transcript`
-- `Restart ASR Server`
-- `Recheck Status`
-- current model, permission, trigger, recording, and ASR state
-
-## Verify Transcription
-
-Run the ASR harness to generate a short Hebrew audio fixture, start or reuse the
-local server, post the WAV to `/inference`, and validate the returned transcript:
+Generate a short Hebrew audio fixture, start or reuse the local server, post the
+WAV to `/inference`, and validate the transcript:
 
 ```bash
 script/asr_harness.sh
@@ -225,55 +213,24 @@ RISPER_WHISPER_SERVER="$PWD/third_party/whisper.cpp/build/bin/whisper-server"
 RISPER_KEEP_SERVER=1
 ```
 
-## Troubleshooting
-
-If the menu says `Model: Missing`, confirm the model exists at:
-
-```text
-~/Library/Application Support/Risper/Models/ivrit-large-v3-turbo/ggml-model.bin
-```
-
-If the menu says `ASR: Missing whisper-server` after installing the internal
-DMG, reinstall from the latest DMG or rebuild the package. If running from
-source, build `whisper.cpp` or set `RISPER_WHISPER_SERVER` to an executable
-`whisper-server` path.
-
-If `fn Long-Press` says Accessibility is required, grant Accessibility permission
-to `/Applications/Risper.app` for DMG installs or to the staged `dist/Risper.app`
-for source-built runs. Then quit and relaunch Risper.
-
-If dictation records but nothing appears in the target app, check Accessibility
-permission and try a simple target such as TextEdit first.
-
-For runtime logs from the installed app:
+## Logs and debugging
 
 ```bash
+# Runtime logs from the installed app
 /usr/bin/log stream --info --style compact --predicate 'subsystem == "com.risper.Risper"'
-```
 
-For source-built development logs:
-
-```bash
+# Source-built development logs
 script/build_and_run.sh --telemetry
 ```
 
-For permission-specific debugging, see
-[`docs/debugging-macos-permissions.md`](docs/debugging-macos-permissions.md).
+For permissions, signing, TCC, hotkeys, microphone, clipboard, or cross-app
+paste issues, read
+[`docs/debugging-macos-permissions.md`](docs/debugging-macos-permissions.md)
+first. See [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) for contribution
+conventions and [`specs.md`](specs.md) for the product and architecture source
+of truth.
 
-## Privacy Model
-
-- Runtime ASR is local-only.
-- The app talks to `whisper-server` over `127.0.0.1`.
-- Audio recordings are temporary and live under
-  `~/Library/Caches/Risper/recordings/`.
-- Transcript text is not logged by default.
-- The clipboard is used temporarily for insertion and restored afterward when
-  Risper still owns the temporary pasteboard contents.
-
-Do not add cloud transcription, telemetry, or transcript upload behavior unless
-the product direction explicitly changes.
-
-## Project Layout
+## Project layout
 
 ```text
 Sources/Risper/App             menu bar lifecycle and recording overlay
@@ -287,25 +244,52 @@ docs/                          debugging and product notes
 Resources/                     app icon resources
 ```
 
-## Current Scope
+---
 
-The MVP intentionally stays narrow:
+# How It Works
+
+- Records only while you hold the dictation trigger.
+- Converts microphone input to a local 16 kHz mono WAV.
+- Sends the audio to a local `whisper.cpp` server on `127.0.0.1:8178`.
+- Forces Hebrew transcription (no language auto-detection, no translation).
+- Inserts the cleaned transcript into the focused app via a temporary paste.
+- Restores your clipboard afterward whenever the pasteboard is unchanged.
+
+Risper needs two macOS permissions:
+
+- **Microphone** — to record dictation audio.
+- **Accessibility** — for the `fn` long-press monitor and synthetic `Cmd+V`
+  insertion into the focused app.
+
+# Privacy
+
+- Runtime ASR is **local-only**; the app talks to `whisper-server` over
+  `127.0.0.1`.
+- Audio recordings are temporary, kept under
+  `~/Library/Caches/Risper/recordings/`, and deleted after transcription.
+- Transcript text is not logged by default.
+- The clipboard is used only momentarily for insertion and restored afterward
+  when Risper still owns the temporary pasteboard contents.
+
+There is no cloud transcription, telemetry, or transcript upload.
+
+# Scope
+
+The current release intentionally stays narrow:
 
 - Hebrew dictation only.
 - Local `whisper.cpp` only.
 - Menu bar status UI only.
-- No transcript editor.
-- No cloud fallback.
-- No updater.
+- No transcript editor, no cloud fallback, no auto-updater.
 - Offline DMG only; no notarized installer yet.
 
-See [`specs.md`](specs.md) for the product and architecture source of truth.
+See [`specs.md`](specs.md) for the full product and architecture reference.
 
-## License
+# License
 
-Risper is released under the MIT License. See [`LICENSE`](LICENSE).
+Risper is released under the [MIT License](LICENSE).
 
-Risper bundles third-party components (the `whisper.cpp` runtime, MIT, and the
-Ivrit.ai Hebrew model, Apache-2.0) under their own licenses. Both permit
-redistribution, including bundling the model weights in the offline DMG. See
+It bundles third-party components — the `whisper.cpp` runtime (MIT) and the
+Ivrit.ai Hebrew model (Apache-2.0). Both permit redistribution, including
+bundling the model weights in the offline DMG. See
 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) for attribution details.
